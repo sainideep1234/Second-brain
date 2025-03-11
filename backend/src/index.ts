@@ -11,8 +11,9 @@ const app = express();
 const MONGODB_URL:string  = 'mongodb+srv://yashmalkhan545:Authokrloyash123@authkrlo.awd4h.mongodb.net/second-Brain';
 
 
-app.use(cors())
+app.use(cors());
 app.use(express.json());
+
 app.use('/user', userRouter);
 app.use('/content', contentRouter);
 

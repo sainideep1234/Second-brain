@@ -1,20 +1,19 @@
-import Logo from "../icons/Logo";
 import Twitter from "../icons/Twitter";
 import Youtube from "../icons/Youtube";
 import Sidebaricon from "./Sidebaricon";
 
-export default function Sidebar(){
-    return <>
-    <div className=" fixed bg-sidebarbg w-[19vw] h-screen px-4  border border-gray-300 ">
-        <div className="flex gap-2 items-center mt-4 ">
-            <Logo></Logo>
-            <div className="font-bold text-xl">Second Brain</div>
+function Sidebar({ opensidebar , setContentType }) {
+  return (
+    <>
+      
+      {opensidebar && (
+        <div className= {` fixed top-15 h-screen left-0 transition-all duration-300 ${opensidebar?'w-96':'w-0'}  bg-sidebarbg p-5 border-r-1 border-gray-300`}>
+            <Sidebaricon  onClick={()=>setContentType("youtube")} title={'Youtube'} icon={< Youtube/>}></Sidebaricon>
+            <Sidebaricon onClick={()=>setContentType("twitter")} title={'Twitter'} icon={< Twitter/>}></Sidebaricon>
         </div>
-        <div className="mt-8 text-textcol">
-            <Sidebaricon icon={<Twitter />} title={"Twitter"}></Sidebaricon>
-            <Sidebaricon icon={<Youtube />} title={"YOutube"}></Sidebaricon>
-        </div>
-    </div>
-    
+      )}
     </>
+  );
 }
+
+export default Sidebar;

@@ -1,8 +1,7 @@
-
-function Cross({onclick}) {
+function Cross({ onclick }) {
   return (
     <svg
-    onClick={onclick}
+      onClick={onclick}
       xmlns="http://www.w3.org/2000/svg"
       fill="none"
       viewBox="0 0 24 24"

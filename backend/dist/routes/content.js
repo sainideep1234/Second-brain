@@ -8,30 +8,32 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
+var __asyncValues = (this && this.__asyncValues) || function (o) {
+    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+    var m = o[Symbol.asyncIterator], i;
+    return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
+    function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
+    function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.contentRouter = void 0;
 const express_1 = require("express");
 const db_1 = require("../db/db");
-const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 require("dotenv/config");
 const authmiddleware_1 = require("../middleware/authmiddleware");
 const func_1 = require("../func");
-const JWT_SECRET = "sdffgk;jnbfmgde";
+require("dotenv/config");
+const generative_ai_1 = require("@google/generative-ai");
 const contentRouter = (0, express_1.Router)();
 exports.contentRouter = contentRouter;
 contentRouter.post("/post", authmiddleware_1.authmiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const link = req.body.link;
-        const title = req.body.title;
+        const { link, title, type } = req.body;
         yield db_1.contentModal.create({
             title,
             link,
-            tag: [],
-            // @ts-ignore
-            id: req.id,
+            type,
+            userId: req.userId,
         });
         return res.status(201).json({
             msg: "content store successfully ",
@@ -47,19 +49,19 @@ contentRouter.get("/get", authmiddleware_1.authmiddleware, (req, res) => __await
     try {
         const content = yield db_1.contentModal
             // @ts-ignore
-            .find({ userId: req.id })
-            .populate("id", "userName");
-        console.log(content);
+            .find({ userId: req.userId });
         if (content) {
             res.status(201).json({
                 msg: "content retrieved successfully",
                 content,
             });
+            return;
         }
         else {
             res.status(403).json({
                 msg: "content is not available ",
             });
+            return;
         }
     }
     catch (error) {
@@ -69,33 +71,40 @@ contentRouter.get("/get", authmiddleware_1.authmiddleware, (req, res) => __await
         });
     }
 }));
-contentRouter.delete("/delete", authmiddleware_1.authmiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const contentId = req.body.contentId;
-    // @ts-ignore
-    yield db_1.contentModal.deleteMany({ _id: contentId, id: req.id });
-    res.status(411).json({
-        msg: "contetn delete successfully",
-    });
-}));
-contentRouter.post("/share", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+contentRouter.delete("/delete/:contentId", authmiddleware_1.authmiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const contentId = req.params.contentId;
     try {
-        // @ts-ignore
-        const { id } = jsonwebtoken_1.default.decode(req.body.token);
+        yield db_1.contentModal.deleteMany({ _id: contentId });
+        res.status(201).json({
+            msg: "contetn delete successfully",
+        });
+    }
+    catch (error) {
+        res.status(501).json({
+            msg: "not delet the conetnt ",
+        });
+    }
+}));
+contentRouter.post("/share", authmiddleware_1.authmiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const id = req.userId;
         if (!id) {
-            return res.status(411).json({ msg: "id is not present" });
+            res.status(411).json({ msg: "id is not present" });
+            return;
         }
         const alreadylink = yield db_1.shareModal.findOne({
             userId: id,
             isShareLink: true,
         });
         if (alreadylink) {
-            return res
+            res
                 .status(201)
                 .json({ msg: "already has share link ", link: alreadylink.shareLink });
+            return;
         }
         const sharerandomlink = (0, func_1.randomString)();
         const share = yield db_1.shareModal.create({
-            id,
+            userId: id,
             shareLink: sharerandomlink,
             isShareLink: true,
         });
@@ -115,10 +124,9 @@ contentRouter.get("/share/:link", (req, res) => __awaiter(void 0, void 0, void 0
     var _a;
     try {
         const link = req.params.link;
-        const shli = link.split(":")[1];
         // Find the share document
         const document = yield db_1.shareModal.findOne({
-            shareLink: shli,
+            shareLink: link,
             isShareLink: true,
         });
         if (!document) {
@@ -141,5 +149,81 @@ contentRouter.get("/share/:link", (req, res) => __awaiter(void 0, void 0, void 0
     catch (error) {
         console.error("Error in /share/:link route:", error);
         return res.status(500).json({ msg: "Internal server error" });
+    }
+}));
+contentRouter.get("/youtube", authmiddleware_1.authmiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const userId = req.userId;
+    const content = yield db_1.contentModal.find({ userId, type: "youtube" });
+    if (!content) {
+        res.status(204).json({
+            msg: "No YOutube conetnt is present",
+        });
+        return;
+    }
+    res.status(201).json({
+        msg: "conetnt retrieve successulyy ",
+        content,
+    });
+}));
+contentRouter.get("/twitter", authmiddleware_1.authmiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const userId = req.userId;
+    const content = yield db_1.contentModal.find({ userId, type: "twitter" });
+    if (!content) {
+        res.status(204).json({
+            msg: "No YOutube conetnt is present",
+        });
+        return;
+    }
+    res.status(201).json({
+        msg: "conetnt retrieve successulyy ",
+        content,
+    });
+}));
+contentRouter.post("/chat", authmiddleware_1.authmiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, e_1, _b, _c;
+    const prompt = req.body.prompt;
+    const userId = req.userId; // Extracted from auth middleware
+    try {
+        if (!prompt) {
+            return res.status(400).json({ error: "Prompt is required" });
+        }
+        // Initialize the AI model
+        const genAI = new generative_ai_1.GoogleGenerativeAI("AIzaSyDKReyAHYCLtfadJyXYqXfGnefdqXKjJmc");
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+        // Generate AI response
+        const result = yield model.generateContentStream(prompt);
+        let responseText = "";
+        try {
+            for (var _d = true, _e = __asyncValues(result.stream), _f; _f = yield _e.next(), _a = _f.done, !_a; _d = true) {
+                _c = _f.value;
+                _d = false;
+                const chunk = _c;
+                responseText += chunk.text();
+            }
+        }
+        catch (e_1_1) { e_1 = { error: e_1_1 }; }
+        finally {
+            try {
+                if (!_d && !_a && (_b = _e.return)) yield _b.call(_e);
+            }
+            finally { if (e_1) throw e_1.error; }
+        }
+        // Save the message in DB
+        const message = yield db_1.messageModal.create({
+            userId,
+            request: prompt,
+            response: responseText
+        });
+        // Fetch all previous messages of this user
+        const allMessages = yield db_1.messageModal.find({ userId }).sort({ createdAt: -1 });
+        // Send the stored messages to client
+        return res.status(200).json({
+            message: "Chat history retrieved successfully",
+            chatHistory: allMessages
+        });
+    }
+    catch (error) {
+        console.error("Error:", error);
+        return res.status(500).json({ error: "An error occurred while processing your request" });
     }
 }));

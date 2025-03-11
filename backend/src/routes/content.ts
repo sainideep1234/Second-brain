@@ -1,23 +1,31 @@
 import { Router, Request, Response } from "express";
 import z from "zod";
-import { contentModal, shareModal } from "../db/db";
+import { contentModal, messageModal, shareModal } from "../db/db";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import "dotenv/config";
 import { authmiddleware } from "../middleware/authmiddleware";
 import { randomString } from "../func";
+import "dotenv/config";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const JWT_SECRET = "sdffgk;jnbfmgde";
+
 const contentRouter = Router();
 
-contentRouter.post( "/post",authmiddleware, async (req: Request, res: Response) => {
+contentRouter.post(
+  "/post",
+  authmiddleware,
+  async (req: Request, res: Response) => {
     try {
-      const link = req.body.link;
-      const title = req.body.title;
+      const { link, title, type } = req.body;
 
-      await contentModal.create({title,link,tag: [],
-        // @ts-ignore id: req.id,
+      await contentModal.create({
+        title,
+        link,
+        type,
+        userId: req.userId,
       });
+
       return res.status(201).json({
         msg: "content store successfully ",
       });
@@ -29,14 +37,11 @@ contentRouter.post( "/post",authmiddleware, async (req: Request, res: Response) 
   }
 );
 
-contentRouter.get("/get", async (req, res) => {
+contentRouter.get("/get", authmiddleware, async (req, res) => {
   try {
     const content = await contentModal
       // @ts-ignore
-      .find({ userId: req.id })
-      .populate("id", "userName");
-
-    console.log(content);
+      .find({ userId: req.userId });
 
     if (content) {
       res.status(201).json({
@@ -48,7 +53,6 @@ contentRouter.get("/get", async (req, res) => {
       res.status(403).json({
         msg: "content is not available ",
       });
-
       return;
     }
   } catch (error) {
@@ -59,23 +63,28 @@ contentRouter.get("/get", async (req, res) => {
   }
 });
 
-contentRouter.delete("/delete", authmiddleware, async (req, res) => {
-  const contentId = req.body.contentId;
+contentRouter.delete("/delete/:contentId", authmiddleware, async (req, res) => {
+  const contentId = req.params.contentId;
 
-  // @ts-ignore
-  await contentModal.deleteMany({ _id: contentId, id: req.id });
-  res.status(411).json({
-    msg: "contetn delete successfully",
-  });
+  try {
+    await contentModal.deleteMany({ _id: contentId });
+
+    res.status(201).json({
+      msg: "contetn delete successfully",
+    });
+  } catch (error) {
+    res.status(501).json({
+      msg: "not delet the conetnt ",
+    });
+  }
 });
 
-contentRouter.post("/share", async (req, res) => {
+contentRouter.post("/share", authmiddleware, async (req, res) => {
   try {
-    // @ts-ignore
-    const { id } = jwt.decode(req.body.token);
-
+    const id = req.userId;
     if (!id) {
-      return res.status(411).json({ msg: "id is not present" });
+      res.status(411).json({ msg: "id is not present" });
+      return;
     }
 
     const alreadylink = await shareModal.findOne({
@@ -84,15 +93,16 @@ contentRouter.post("/share", async (req, res) => {
     });
 
     if (alreadylink) {
-      return res
+      res
         .status(201)
         .json({ msg: "already has share link ", link: alreadylink.shareLink });
+      return;
     }
 
     const sharerandomlink = randomString();
 
     const share = await shareModal.create({
-      id,
+      userId: id,
       shareLink: sharerandomlink,
       isShareLink: true,
     });
@@ -112,11 +122,10 @@ contentRouter.post("/share", async (req, res) => {
 contentRouter.get("/share/:link", async (req, res) => {
   try {
     const link = req.params.link;
-    const shli = link.split(":")[1];
 
     // Find the share document
     const document = await shareModal.findOne({
-      shareLink: shli,
+      shareLink: link,
       isShareLink: true,
     });
 
@@ -145,4 +154,88 @@ contentRouter.get("/share/:link", async (req, res) => {
     return res.status(500).json({ msg: "Internal server error" });
   }
 });
+
+contentRouter.get("/youtube", authmiddleware, async (req, res) => {
+  const userId = req.userId;
+
+  const content = await contentModal.find({ userId, type: "youtube" });
+
+  if (!content) {
+    res.status(204).json({
+      msg: "No YOutube conetnt is present",
+    });
+    return;
+  }
+
+  res.status(201).json({
+    msg: "conetnt retrieve successulyy ",
+    content,
+  });
+});
+contentRouter.get("/twitter", authmiddleware, async (req, res) => {
+  const userId = req.userId;
+
+  const content = await contentModal.find({ userId, type: "twitter" });
+
+  if (!content) {
+    res.status(204).json({
+      msg: "No YOutube conetnt is present",
+    });
+    return;
+  }
+
+  res.status(201).json({
+    msg: "conetnt retrieve successulyy ",
+    content,
+  });
+});
+
+
+
+
+contentRouter.post("/chat", authmiddleware, async (req, res) => {
+  const prompt = req.body.prompt;
+  const userId = req.userId; // Extracted from auth middleware
+
+  try {
+    if (!prompt) {
+      return res.status(400).json({ error: "Prompt is required" });
+    }
+
+    // Initialize the AI model
+    const genAI = new GoogleGenerativeAI("AIzaSyDKReyAHYCLtfadJyXYqXfGnefdqXKjJmc");
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+    // Generate AI response
+    const result = await model.generateContentStream(prompt);
+    
+    let responseText = "";
+    for await (const chunk of result.stream) {
+      responseText += chunk.text();
+    }
+
+    // Save the message in DB
+    const message = await messageModal.create({ 
+      userId, 
+      request: prompt, 
+      response: responseText 
+    });
+
+    // Fetch all previous messages of this user
+    const allMessages = await messageModal.find({ userId }).sort({ createdAt: -1 });
+
+    // Send the stored messages to client
+    return res.status(200).json({
+      message: "Chat history retrieved successfully",
+      chatHistory: allMessages
+    });
+
+  } catch (error) {
+    console.error("Error:", error);
+    return res.status(500).json({ error: "An error occurred while processing your request" });
+  }
+});
+
 export { contentRouter };
+
+

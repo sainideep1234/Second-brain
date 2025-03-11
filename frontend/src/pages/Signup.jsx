@@ -1,82 +1,57 @@
-import { useRef, useState } from 'react';
-import Inputbox from '../components/Inputbox';
-import { BACKEND_URL } from '../../config';
-import axios from 'axios';
+import axios from "axios";
+import { useRef, useState } from "react";
+import { Link } from "react-router-dom";
 
 
 function Signup() {
-  const [responsemsg, setResponseMsg] = useState(""); // Fixed casing for clarity
-  const emailRef = useRef();
-  const passwordRef = useRef();
+  const passwordref = useRef(null);
+  const usernameref = useRef(null);
+  const [info , setInfo ] = useState('');
 
 
-  async function signup() {
+  async function handleSubmit(){
+    
+    let name = usernameref.current.value;
+    let password = passwordref.current.value;
+    
     try {
-      const name = emailRef.current.value;
-      const password = passwordRef.current.value;
-
-      // Send POST request to the backend
-      const response = await axios.post(`${BACKEND_URL}user/signup`, {
+      let response = await axios.post("http://localhost:3002/user/signup", {
         userName: name,
         password: password,
       });
 
-      // Set response message from backend
-      setResponseMsg(response.data.msg || "Signup successful!");
-
-  
-
+      setInfo(response.data.msg); // ✅ Display success message
     } catch (error) {
-      // Handle error responses
-      if (error.response) {
-        // Server responded with a status other than 2xx
-        setResponseMsg(error.response.data.msg || "An error occurred.");
-      } else if (error.request) {
-        // Request was made but no response received
-        setResponseMsg("No response from the server. Please try again.");
-      } else {
-        // Something else happened
-        setResponseMsg("Something went wrong. Please try again later.");
-      }
+      console.error(error);
+      setInfo(error.response?.data?.msg || "Signup failed. Try again."); // ✅ Show error from server
+      usernameref.current.value="";
+      passwordref.current.value="";
     }
+    
+ 
   }
 
+
   return (
-    <div className="h-screen w-screen flex justify-center items-center">
-      <div className="w-1/3 bg-mainbg rounded-lg p-10">
-        <h1 className="font-bold uppercase text-5xl text-center border-b pb-3">
-          Sign Up
-        </h1>
-
-        {/* Input Fields */}
-        <Inputbox ref={emailRef} placeholder={"deep@gmail.com"} id={"email"} title={"Email"} />
-        <Inputbox ref={passwordRef} placeholder={"1234567"} id={"password"} title={"Password"} />
-
-        {/* Submit Button */}
-        <button
-          onClick={signup}
-          className="bg-black text-white w-full mt-10 py-1 rounded-xl text-2xl hover:bg-zinc-800 hover:cursor-pointer mb-2"
-        >
-          Submit
-        </button>
-
-        {/* Response Message */}
-        {responsemsg && (
-          <div className="text-red-800 w-full py-2 text-center border border-red-800 rounded-lg mt-4">
-            {responsemsg}
+    <div className="flex justify-center items-center w-screen h-screen bg-bgcolor ">
+      <div className="bg-sidebarbg w-1/3 p-5 rounded-lg">
+        <h1 className="text-4xl font-bold border-b-1 border-gray-700 text-center my-5 pb-4 border-gray-500">Signup</h1>
+        <label className='text-lg font-semibold ' to='username'>Email
+          <input ref={usernameref} className='border border-gray-400 w-full rounded-md px-4 py-1 my-2' type="text" id="username" placeholder="deep@gmail.com" />
+        </label>
+        <label className='text-lg font-semibold ' to='password'>Password
+          <input ref={passwordref} className='border  border-gray-400 w-full rounded-md px-4 py-1 my-2' type="password" id="password" placeholder="122456" />
+        </label>
+        {info && (
+          <div className=" mt-4 py-2 font-semibold text-center border rounded-md">
+            {info}
           </div>
         )}
-
-        {/* Sign-In Link */}
-        <div className="flex gap-1 mt-4">
-          <span className="text-gray-600">If already have an account?</span>
-          <a className="border-b hover:border-none" href="/signin">
-            Sign In
-          </a>
-        </div>
+        <button onClick={handleSubmit} className="w-full py-2 hover:bg-newbtn hover:text-white rounded-md border border-gray-300 rounded-md bg-[#f26b8a] text-lg font-semibold mt-6 mb-2">Submit</button>
+        <span className="mt-1 inline-block ">If you already have account / <Link to='/signin' className="underline font-bold hover:font-semibold hover:font-gray-600">SignIn</Link></span>
       </div>
     </div>
-  );
+  )
 }
 
-export default Signup;
+export default Signup

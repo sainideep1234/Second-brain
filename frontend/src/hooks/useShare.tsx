@@ -8,7 +8,8 @@ function useShare(url) {
     async function fetchdata() {
       try {
         const response = await axios.get(url);
-        setsharecontent(response.data);
+        setsharecontent(response.data.contents);
+        console.log(Sharecontent);
       } catch (error) {
         console.log("Error fetching data:", error);
         setsharecontent([]); // Error aaye toh empty array return karo

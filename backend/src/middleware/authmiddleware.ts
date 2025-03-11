@@ -3,23 +3,28 @@ import jwt from "jsonwebtoken";
 
 const JWT_SECRET = "sdffgk;jnbfmgde";
 
-export const authmiddleware = (req: Request,res: Response,next: NextFunction) => {
-  try {
-    //@ts-ignore
-    const token:string  = req.headers.Authorization;
-    const istoken = jwt.verify(token, JWT_SECRET);
+interface tokenInterface {
+  id: string;
+}
 
-    console.log("middleware" + istoken);
+export const authmiddleware = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const token = req.headers.authorization;
+
+    if (!token) {
+      res.status(403).json({ msg: "token is not present " });
+      return;
+    }
+
+    const istoken = jwt.verify(token, JWT_SECRET) as tokenInterface;
 
     if (istoken) {
-      //@ts-ignore
       req.userId = istoken.id;
       next();
-    } else {
-      
-      res.status(403).json({
-        msg: "token is not present ",
-      });
     }
   } catch (error) {}
 };

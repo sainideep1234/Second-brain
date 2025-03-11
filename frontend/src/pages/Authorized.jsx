@@ -1,9 +1,17 @@
-
-import Signin from './Signin';
+import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 
 function Authorized({ children }) {
-  const token =    localStorage.getItem('token'); // Replace this logic with how you manage tokens.
-  return token ? children : <Signin />;
+  const token = localStorage.getItem("token");
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!token) {
+      navigate("/signin");
+    }
+  }, [token, navigate]);
+
+  return <>{children}</>;
 }
 
 export default Authorized;

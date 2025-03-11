@@ -1,9 +1,14 @@
 @import "tailwindcss";
 @theme {
-    --color-primaryBtnbg: #5047e5;
-    --color-secondaryBtnbg: #e0e6ff;
-    --color-mainbg: #ece1ee;
-    --color-btnbg: 	#683755;
-    --color-sidebarbg: #c2adc6;
-    --color-textcol: #818181;
+    --color-bgcolor: #FFF7F3;
+    --color-btncolor: #7f007f;
+    --color-btncolor2: #C599B6;
+    --color-btnhovercolor: #E6B2BA;
+    --color-sidebarbg: #E6B2BA;
+    --color-newbtn: #D17D98;
+ 
+  }
+
+  html, body {
+    overflow-x: hidden;
   }

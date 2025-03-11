@@ -9,9 +9,11 @@ const userSchema = new Schema({
 const contentSchema = new Schema({
   title: { type: String },
   link: { type: String },
+  type: { type: String },
   tags: [{ type: mongoose.Types.ObjectId, ref: "Tag" }],
-  userId: { type: mongoose.Types.ObjectId, ref: "User" },
-});
+  userId: { type: mongoose.Types.ObjectId, ref: "User" },  
+} , 
+{timestamps:true});
 
 const ShareSchema = new Schema({
   userId: { type: mongoose.Types.ObjectId, ref: "User" },
@@ -19,6 +21,14 @@ const ShareSchema = new Schema({
   shareLink: { type: String },
 });
 
+const messageSchema = new Schema({
+  userId: { type: mongoose.Types.ObjectId, ref: "User" },
+  request: { type: String , required:true},
+  response: { type: String ,  required:true },
+  
+});
+
 export const userModal = model("User", userSchema);
 export const contentModal = model("Content", contentSchema);
 export const shareModal = model("Share", ShareSchema);
+export const messageModal = model("usersMessages", messageSchema);

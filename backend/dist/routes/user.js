@@ -19,7 +19,7 @@ const db_1 = require("../db/db");
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 require("dotenv/config");
-const JWT_SECRET = "sdffgk;jnbfmgde";
+// const process.env.JWT_SECRET = "sdffgk;jnbfmgde";
 const userRouter = (0, express_1.Router)();
 exports.userRouter = userRouter;
 const signupSchema = zod_1.default.object({
@@ -30,17 +30,16 @@ userRouter.post("/signup", (req, res) => __awaiter(void 0, void 0, void 0, funct
     try {
         const validschema = signupSchema.safeParse(req.body);
         if (!validschema.success) {
-            res.status(403).json({
+            res.status(400).json({
                 msg: "user credentials not match ",
             });
             return;
         }
         const { userName, password } = req.body;
-        // search user ceated already 
         const preUser = yield db_1.userModal.findOne({ userName });
         if (preUser) {
-            res.status(403).json({
-                msg: 'user is already signed up '
+            res.status(409).json({
+                msg: "user is already signed up ",
             });
             return;
         }
@@ -50,50 +49,54 @@ userRouter.post("/signup", (req, res) => __awaiter(void 0, void 0, void 0, funct
             password: hashedPassword,
         });
         if (user) {
-            const token = jsonwebtoken_1.default.sign({ id: user._id }, JWT_SECRET);
-            res.status(200).json({
+            res.status(201).json({
                 msg: "user signup successfully ",
-                token: token,
             });
+            return;
         }
     }
     catch (error) {
         return res.status(500).json({
-            msg: "user not craeted",
+            msg: "User not created",
         });
     }
 }));
-userRouter.post('/signin', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+userRouter.post("/signin", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const validschema = signupSchema.safeParse(req.body);
         if (!validschema.success) {
-            res.status(403).json({
-                msg: 'creadentials are wrong '
+            res.status(400).json({
+                msg: "creadentials are wrong ",
             });
         }
-        // search user 
+        // search user
         const { userName, password } = req.body;
         const user = yield db_1.userModal.findOne({ userName });
         if (!user) {
             return res.status(403).json({
-                msg: 'email not present  '
+                msg: "email not present  ",
             });
         }
-        //check password 
+        //double authentication first username checkj now password
+        //check password
         const isvalidpass = yield bcrypt_1.default.compare(password, user.password);
         if (!isvalidpass) {
             return res.status(403).json({
-                msg: 'password is wrong '
+                msg: "password is wrong ",
             });
         }
-        const token = jsonwebtoken_1.default.sign({ id: user._id }, JWT_SECRET);
+        if (!process.env.JWT_SECRET) {
+            throw new Error("JWT_SECRET is not defined");
+        }
+        const token = jsonwebtoken_1.default.sign({ id: user._id }, process.env.JWT_SECRET);
         return res.status(200).json({
-            msg: 'login successfully', token: token
+            msg: "login successfully",
+            token: token,
         });
     }
     catch (error) {
         return res.json({
-            msg: 'error ' + error
+            msg: "error " + error,
         });
     }
 }));

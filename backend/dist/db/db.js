@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.shareModal = exports.contentModal = exports.userModal = void 0;
+exports.messageModal = exports.shareModal = exports.contentModal = exports.userModal = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
 const userSchema = new mongoose_1.Schema({
     userName: { type: String, unique: true },
@@ -42,14 +42,21 @@ const userSchema = new mongoose_1.Schema({
 const contentSchema = new mongoose_1.Schema({
     title: { type: String },
     link: { type: String },
+    type: { type: String },
     tags: [{ type: mongoose_1.default.Types.ObjectId, ref: "Tag" }],
     userId: { type: mongoose_1.default.Types.ObjectId, ref: "User" },
-});
+}, { timestamps: true });
 const ShareSchema = new mongoose_1.Schema({
     userId: { type: mongoose_1.default.Types.ObjectId, ref: "User" },
     isShareLink: { type: Boolean, default: false },
     shareLink: { type: String },
 });
+const messageSchema = new mongoose_1.Schema({
+    userId: { type: mongoose_1.default.Types.ObjectId, ref: "User" },
+    request: { type: String, required: true },
+    response: { type: String, required: true },
+});
 exports.userModal = (0, mongoose_1.model)("User", userSchema);
 exports.contentModal = (0, mongoose_1.model)("Content", contentSchema);
 exports.shareModal = (0, mongoose_1.model)("Share", ShareSchema);
+exports.messageModal = (0, mongoose_1.model)("usersMessages", messageSchema);
