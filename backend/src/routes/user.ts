@@ -6,7 +6,6 @@ import jwt from "jsonwebtoken";
 import "dotenv/config";
 
 
-// const process.env.JWT_SECRET = "sdffgk;jnbfmgde";
 const userRouter = Router();
 
 const signupSchema = z.object({
@@ -66,7 +65,6 @@ userRouter.post("/signin", async (req: Request, res: Response) => {
       });
     }
 
-    // search user
     const { userName, password } = req.body;
 
     const user = await userModal.findOne({ userName });
@@ -75,8 +73,7 @@ userRouter.post("/signin", async (req: Request, res: Response) => {
         msg: "email not present  ",
       });
     }
-    //double authentication first username checkj now password
-    //check password
+ 
     const isvalidpass = await bcrypt.compare(password, user.password!);
     if (!isvalidpass) {
       return res.status(403).json({

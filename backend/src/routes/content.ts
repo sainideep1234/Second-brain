@@ -40,8 +40,7 @@ contentRouter.post(
 contentRouter.get("/get", authmiddleware, async (req, res) => {
   try {
     const content = await contentModal
-      // @ts-ignore
-      .find({ userId: req.userId });
+           .find({ userId: req.userId });
 
     if (content) {
       res.status(201).json({
@@ -123,7 +122,7 @@ contentRouter.get("/share/:link", async (req, res) => {
   try {
     const link = req.params.link;
 
-    // Find the share document
+  
     const document = await shareModal.findOne({
       shareLink: link,
       isShareLink: true,
@@ -133,10 +132,8 @@ contentRouter.get("/share/:link", async (req, res) => {
       return res.status(404).json({ msg: "Shared link is invalid or expired" });
     }
 
-    // Convert id to string if it's an ObjectId
     const id = document?.userId?.toString();
 
-    // Find associated content
     const contents = await contentModal.find({ userId: id });
 
     if (contents.length === 0) {
@@ -195,18 +192,17 @@ contentRouter.get("/twitter", authmiddleware, async (req, res) => {
 
 contentRouter.post("/chat", authmiddleware, async (req, res) => {
   const prompt = req.body.prompt;
-  const userId = req.userId; // Extracted from auth middleware
+  const userId = req.userId; 
 
   try {
     if (!prompt) {
       return res.status(400).json({ error: "Prompt is required" });
     }
 
-    // Initialize the AI model
+  
     const genAI = new GoogleGenerativeAI("AIzaSyDKReyAHYCLtfadJyXYqXfGnefdqXKjJmc");
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-    // Generate AI response
     const result = await model.generateContentStream(prompt);
     
     let responseText = "";
@@ -214,17 +210,17 @@ contentRouter.post("/chat", authmiddleware, async (req, res) => {
       responseText += chunk.text();
     }
 
-    // Save the message in DB
+  
     const message = await messageModal.create({ 
       userId, 
       request: prompt, 
       response: responseText 
     });
 
-    // Fetch all previous messages of this user
+  
     const allMessages = await messageModal.find({ userId }).sort({ createdAt: -1 });
 
-    // Send the stored messages to client
+
     return res.status(200).json({
       message: "Chat history retrieved successfully",
       chatHistory: allMessages
