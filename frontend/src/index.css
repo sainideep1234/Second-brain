@@ -1,0 +1,14 @@
+@import "tailwindcss";
+@theme {
+    --color-bgcolor: #FFF7F3;
+    --color-btncolor: #7f007f;
+    --color-btncolor2: #C599B6;
+    --color-btnhovercolor: #E6B2BA;
+    --color-sidebarbg: #E6B2BA;
+    --color-newbtn: #D17D98;
+ 
+  }
+
+  html, body {
+    overflow-x: hidden;
+  }
