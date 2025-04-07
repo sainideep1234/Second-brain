@@ -58,6 +58,7 @@ userRouter.post("/signup", async (req, res) => {
 userRouter.post("/signin", async (req: Request, res: Response) => {
   try {
     const validschema = signupSchema.safeParse(req.body);
+    const userAgent = req.get('user-agent');
 
     if (!validschema.success) {
       res.status(400).json({

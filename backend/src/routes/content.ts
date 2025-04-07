@@ -5,24 +5,21 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import "dotenv/config";
 import { authmiddleware } from "../middleware/authmiddleware";
-import { randomString } from "../func";
+import { randomString } from "../utils/func";
 import "dotenv/config";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-
 const contentRouter = Router();
 
-contentRouter.post(
-  "/post",
-  authmiddleware,
-  async (req: Request, res: Response) => {
+contentRouter.post("/post",authmiddleware,async (req: Request, res: Response) => {
     try {
-      const { link, title, type } = req.body;
+      const { link, title, type , description } = req.body;
 
       await contentModal.create({
         title,
         link,
         type,
+        description, 
         userId: req.userId,
       });
 
@@ -39,8 +36,7 @@ contentRouter.post(
 
 contentRouter.get("/get", authmiddleware, async (req, res) => {
   try {
-    const content = await contentModal
-           .find({ userId: req.userId });
+    const content = await contentModal.find({ userId: req.userId });
 
     if (content) {
       res.status(201).json({
@@ -122,7 +118,6 @@ contentRouter.get("/share/:link", async (req, res) => {
   try {
     const link = req.params.link;
 
-  
     const document = await shareModal.findOne({
       shareLink: link,
       isShareLink: true,
@@ -169,6 +164,7 @@ contentRouter.get("/youtube", authmiddleware, async (req, res) => {
     content,
   });
 });
+
 contentRouter.get("/twitter", authmiddleware, async (req, res) => {
   const userId = req.userId;
 
@@ -187,51 +183,64 @@ contentRouter.get("/twitter", authmiddleware, async (req, res) => {
   });
 });
 
-
-
-
 contentRouter.post("/chat", authmiddleware, async (req, res) => {
   const prompt = req.body.prompt;
-  const userId = req.userId; 
+  const userId = req.userId;
 
   try {
     if (!prompt) {
       return res.status(400).json({ error: "Prompt is required" });
     }
 
-  
-    const genAI = new GoogleGenerativeAI("AIzaSyDKReyAHYCLtfadJyXYqXfGnefdqXKjJmc");
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-
-    const result = await model.generateContentStream(prompt);
     
-    let responseText = "";
-    for await (const chunk of result.stream) {
-      responseText += chunk.text();
-    }
 
   
-    const message = await messageModal.create({ 
-      userId, 
-      request: prompt, 
-      response: responseText 
+
+    
+
+    const message = await messageModal.create({
+      userId,
+      request: prompt,
+      response:"
     });
-
-  
-    const allMessages = await messageModal.find({ userId }).sort({ createdAt: -1 });
-
 
     return res.status(200).json({
       message: "Chat history retrieved successfully",
-      chatHistory: allMessages
+      llmMsg: result?.response?.candidates[0]?.content.parts[0].text,
     });
-
   } catch (error) {
     console.error("Error:", error);
-    return res.status(500).json({ error: "An error occurred while processing your request" });
+    return res
+      .status(500)
+      .json({ error: "An error occurred while processing your request" });
+  }
+});
+
+contentRouter.get("/chat", authmiddleware, async (req, res) => {
+  const userId = req.userId;
+
+  try {
+    const data = await messageModal.find({ userId });
+
+    if (!data) {
+      res.status(204).json({
+        message: "Chat history retrieved successfully",
+        allmsg: data,
+      });
+      return;
+    }
+
+    res.status(200).json({
+      message: "Chat history retrieved successfully",
+      allmsg: data,
+    });
+    return;
+  } catch (error) {
+    console.error("Error:", error);
+    return res
+      .status(500)
+      .json({ error: "An error occurred while processing your request" });
   }
 });
 
 export { contentRouter };
-
-

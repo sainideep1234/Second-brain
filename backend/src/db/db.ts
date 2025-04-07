@@ -10,6 +10,7 @@ const contentSchema = new Schema({
   title: { type: String },
   link: { type: String },
   type: { type: String },
+  description:{type:String},
   tags: [{ type: mongoose.Types.ObjectId, ref: "Tag" }],
   userId: { type: mongoose.Types.ObjectId, ref: "User" },  
 } , 
